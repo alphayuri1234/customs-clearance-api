@@ -12,7 +12,41 @@ services:
       - "5435:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d customs_clearance"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - customs_net
+    restart: always
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: customs_clearance_api
+    ports:
+      - "8082:8082"
+    environment:
+      - PORT=8082
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=customs_clearance
+      - DB_SSLMODE=disable
+      - JWT_SECRET=supersecretkey
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - customs_net
     restart: always
 
 volumes:
   pgdata:
+
+networks:
+  customs_net:
+    driver: bridge
