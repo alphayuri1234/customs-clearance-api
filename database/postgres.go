@@ -41,9 +41,16 @@ func InitDB() *gorm.DB {
 		sslmode = "disable"
 	}
 
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s TimeZone=Asia/Jakarta",
-		host, user, password, dbname, port, sslmode,
-	)
+	var dsn string
+	if password != "" {
+		dsn = fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s&TimeZone=Asia/Jakarta",
+			user, password, host, port, dbname, sslmode,
+		)
+	} else {
+		dsn = fmt.Sprintf("postgres://%s@%s:%s/%s?sslmode=%s&TimeZone=Asia/Jakarta",
+			user, host, port, dbname, sslmode,
+		)
+	}
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
@@ -66,9 +73,12 @@ func InitDB() *gorm.DB {
 	log.Println("Menjalankan AutoMigrate...")
 	err = db.AutoMigrate(
 		&models.User{},
+		&models.Officer{},
 		&models.Country{},
 		&models.Port{},
 		&models.Commodity{},
+		&models.Clearance{},
+		&models.RiskProfile{},
 	)
 	if err != nil {
 		log.Fatalf("Gagal melakukan AutoMigrate: %v", err)

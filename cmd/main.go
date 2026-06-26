@@ -6,9 +6,14 @@ import (
 
 	"customs-clearance-api/database"
 	"customs-clearance-api/routes"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Println("Peringatan: Gagal memuat file .env, menggunakan env default sistem")
+	}
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8082"
