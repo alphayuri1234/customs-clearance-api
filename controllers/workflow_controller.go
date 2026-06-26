@@ -48,7 +48,13 @@ func (controller *WorkflowController) ProcessInspection(ctx *gin.Context) {
 		return
 	}
 
-	clearance, err := controller.workflowService.ProcessInspection(request.ClearanceID, request.Result)
+	claims, ok := middleware.CurrentUserClaims(ctx)
+	if !ok {
+		ctx.JSON(http.StatusUnauthorized, models.ErrorResponse("user belum terautentikasi", nil))
+		return
+	}
+
+	clearance, err := controller.workflowService.ProcessInspection(request.ClearanceID, request.Result, claims.UserID)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, models.ErrorResponse("pemeriksaan fisik gagal diproses", err.Error()))
 		return
@@ -88,7 +94,13 @@ func (controller *WorkflowController) ProcessRelease(ctx *gin.Context) {
 		return
 	}
 
-	clearance, err := controller.workflowService.ProcessRelease(request.ClearanceID)
+	claims, ok := middleware.CurrentUserClaims(ctx)
+	if !ok {
+		ctx.JSON(http.StatusUnauthorized, models.ErrorResponse("user belum terautentikasi", nil))
+		return
+	}
+
+	clearance, err := controller.workflowService.ProcessRelease(request.ClearanceID, claims.UserID)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, models.ErrorResponse("gagal menerbitkan SPPB", err.Error()))
 		return

@@ -73,6 +73,8 @@ func TestMain(m *testing.M) {
 		&models.Commodity{},
 		&models.Clearance{},
 		&models.RiskProfile{},
+		&models.InspectionResult{},
+		&models.ReleaseOrder{},
 	)
 	if err != nil {
 		log.Fatalf("Gagal AutoMigrate di testing: %v", err)
@@ -82,6 +84,8 @@ func TestMain(m *testing.M) {
 }
 
 func cleanupDatabase() {
+	testDB.Exec("DELETE FROM inspection_results")
+	testDB.Exec("DELETE FROM release_orders")
 	testDB.Exec("DELETE FROM risk_profiles")
 	testDB.Exec("DELETE FROM clearances")
 	testDB.Exec("DELETE FROM commodities")
@@ -91,7 +95,7 @@ func cleanupDatabase() {
 	testDB.Exec("DELETE FROM users")
 }
 
-func setupTestData(t *testing.T) (models.User, models.Country, models.Port, models.Commodity) {
+func setupTestData(t *testing.T) (models.User, models.User, models.Country, models.Port, models.Commodity) {
 	cleanupDatabase()
 
 	user := models.User{
@@ -102,6 +106,25 @@ func setupTestData(t *testing.T) (models.User, models.Country, models.Port, mode
 	}
 	if err := testDB.Create(&user).Error; err != nil {
 		t.Fatalf("Gagal membuat test user: %v", err)
+	}
+
+	officerUser := models.User{
+		Name:     "Test Officer",
+		Email:    "officer@example.com",
+		Password: "password123",
+		Role:     models.RoleOfficer,
+	}
+	if err := testDB.Create(&officerUser).Error; err != nil {
+		t.Fatalf("Gagal membuat test officer user: %v", err)
+	}
+
+	officer := models.Officer{
+		UserID:   officerUser.ID,
+		NIP:      "199201012015011001",
+		Position: "Inspector",
+	}
+	if err := testDB.Create(&officer).Error; err != nil {
+		t.Fatalf("Gagal membuat test officer: %v", err)
 	}
 
 	country := models.Country{
@@ -131,11 +154,11 @@ func setupTestData(t *testing.T) (models.User, models.Country, models.Port, mode
 		t.Fatalf("Gagal membuat test commodity: %v", err)
 	}
 
-	return user, country, port, commodity
+	return user, officerUser, country, port, commodity
 }
 
 func TestWorkflowHighRisk_Success(t *testing.T) {
-	user, _, port, commodity := setupTestData(t)
+	user, officerUser, _, port, commodity := setupTestData(t)
 	workflowService := NewWorkflowService(testDB)
 
 	// Buat Clearance bernilai tinggi (HIGH Risk)
@@ -172,12 +195,19 @@ func TestWorkflowHighRisk_Success(t *testing.T) {
 	}
 
 	// 3. Process Inspection PASS -> Status INSPECTION_PASSED
-	inspCl, err := workflowService.ProcessInspection(clearance.ID, "PASS")
+	inspCl, err := workflowService.ProcessInspection(clearance.ID, "PASS", officerUser.ID)
 	if err != nil {
 		t.Fatalf("ProcessInspection gagal: %v", err)
 	}
 	if inspCl.Status != models.StatusInspectionPassed {
 		t.Errorf("Status harus INSPECTION_PASSED, got: %s", inspCl.Status)
+	}
+
+	// Check if InspectionResult was successfully created in database
+	var count int64
+	testDB.Model(&models.InspectionResult{}).Where("clearance_id = ? AND result = 'PASS'", clearance.ID).Count(&count)
+	if count != 1 {
+		t.Errorf("InspectionResult record harus dibuat, count: %d", count)
 	}
 
 	// 4. Process Approve -> Status APPROVED
@@ -190,12 +220,18 @@ func TestWorkflowHighRisk_Success(t *testing.T) {
 	}
 
 	// 5. Process Release -> Status RELEASED
-	relCl, err := workflowService.ProcessRelease(clearance.ID)
+	relCl, err := workflowService.ProcessRelease(clearance.ID, officerUser.ID)
 	if err != nil {
 		t.Fatalf("ProcessRelease gagal: %v", err)
 	}
 	if relCl.Status != models.StatusReleased {
 		t.Errorf("Status harus RELEASED, got: %s", relCl.Status)
+	}
+
+	// Check if ReleaseOrder (SPPB) was successfully created in database
+	testDB.Model(&models.ReleaseOrder{}).Where("clearance_id = ?", clearance.ID).Count(&count)
+	if count != 1 {
+		t.Errorf("ReleaseOrder record harus dibuat, count: %d", count)
 	}
 
 	// 6. Process Gate Out -> Status GATE_OUT
@@ -209,7 +245,7 @@ func TestWorkflowHighRisk_Success(t *testing.T) {
 }
 
 func TestWorkflowLowRisk_Success(t *testing.T) {
-	user, _, port, commodity := setupTestData(t)
+	user, officerUser, _, port, commodity := setupTestData(t)
 	workflowService := NewWorkflowService(testDB)
 
 	// Buat Clearance bernilai rendah (LOW Risk)
@@ -240,7 +276,7 @@ func TestWorkflowLowRisk_Success(t *testing.T) {
 	}
 
 	// 2. Coba periksa fisik -> Harus error karena LOW risk tidak masuk antrean INSPECTION
-	_, err = workflowService.ProcessInspection(clearance.ID, "PASS")
+	_, err = workflowService.ProcessInspection(clearance.ID, "PASS", officerUser.ID)
 	if err == nil {
 		t.Error("Harus error jika periksa fisik dipanggil untuk status SUBMITTED")
 	}
@@ -255,7 +291,7 @@ func TestWorkflowLowRisk_Success(t *testing.T) {
 	}
 
 	// 4. Process Release -> Status RELEASED
-	relCl, err := workflowService.ProcessRelease(clearance.ID)
+	relCl, err := workflowService.ProcessRelease(clearance.ID, officerUser.ID)
 	if err != nil {
 		t.Fatalf("ProcessRelease gagal: %v", err)
 	}
@@ -265,7 +301,7 @@ func TestWorkflowLowRisk_Success(t *testing.T) {
 }
 
 func TestWorkflowHighRisk_FailInspection(t *testing.T) {
-	user, _, port, commodity := setupTestData(t)
+	user, officerUser, _, port, commodity := setupTestData(t)
 	workflowService := NewWorkflowService(testDB)
 
 	clearance := models.Clearance{
@@ -287,12 +323,19 @@ func TestWorkflowHighRisk_FailInspection(t *testing.T) {
 	}
 
 	// 2. Process Inspection FAIL -> Status HOLD
-	inspCl, err := workflowService.ProcessInspection(clearance.ID, "FAIL")
+	inspCl, err := workflowService.ProcessInspection(clearance.ID, "FAIL", officerUser.ID)
 	if err != nil {
 		t.Fatalf("ProcessInspection gagal: %v", err)
 	}
 	if inspCl.Status != models.StatusHold {
 		t.Errorf("Status harus HOLD, got: %s", inspCl.Status)
+	}
+
+	// Check if InspectionResult was successfully created in database with FAIL
+	var count int64
+	testDB.Model(&models.InspectionResult{}).Where("clearance_id = ? AND result = 'FAIL'", clearance.ID).Count(&count)
+	if count != 1 {
+		t.Errorf("InspectionResult FAIL record harus dibuat, count: %d", count)
 	}
 
 	// 3. Coba Approve -> Harus gagal karena berstatus HOLD
