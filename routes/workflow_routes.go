@@ -10,6 +10,13 @@ import (
 func RegisterWorkflowRoutes(router *gin.RouterGroup, workflowService *services.WorkflowService) {
 	workflowController := controllers.NewWorkflowController(workflowService)
 
+	clearances := router.Group("/clearances")
+	clearances.Use(middleware.AuthMiddleware(), middleware.OfficerOnly())
+	{
+		clearances.GET("", workflowController.ListClearances)
+		clearances.GET("/:id", workflowController.GetClearance)
+	}
+
 	workflow := router.Group("/workflow")
 	// Semua endpoint workflow dilindungi oleh JWT Auth dan hanya untuk Officer
 	workflow.Use(middleware.AuthMiddleware(), middleware.OfficerOnly())

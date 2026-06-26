@@ -13,21 +13,44 @@ const (
 )
 
 type Clearance struct {
-	ID          uint         `json:"id" gorm:"primaryKey"`
-	UserID      uint         `json:"user_id" gorm:"not null"`
-	User        User         `json:"user" gorm:"foreignKey:UserID"`
-	CommodityID uint         `json:"commodity_id" gorm:"not null"`
-	Commodity   Commodity    `json:"commodity" gorm:"foreignKey:CommodityID"`
-	PortID      uint         `json:"port_id" gorm:"not null"`
-	Port        Port         `json:"port" gorm:"foreignKey:PortID"`
-	Valuation   float64      `json:"valuation" gorm:"not null"`
-	Description string       `json:"description" gorm:"not null"`
+	ID          uint              `json:"id" gorm:"primaryKey"`
+	UserID      uint              `json:"user_id" gorm:"not null"`
+	User        User              `json:"user" gorm:"foreignKey:UserID"`
+	CommodityID uint              `json:"commodity_id" gorm:"not null"`
+	Commodity   Commodity         `json:"commodity" gorm:"foreignKey:CommodityID"`
+	PortID      uint              `json:"port_id" gorm:"not null"`
+	Port        Port              `json:"port" gorm:"foreignKey:PortID"`
+	Valuation   float64           `json:"valuation" gorm:"not null"`
+	Description string            `json:"description" gorm:"not null"`
 	Status      string            `json:"status" gorm:"not null;default:SUBMITTED"`
 	RiskProfile *RiskProfile      `json:"risk_profile,omitempty" gorm:"foreignKey:ClearanceID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 	Inspection  *InspectionResult `json:"inspection,omitempty" gorm:"foreignKey:ClearanceID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 	Release     *ReleaseOrder     `json:"release,omitempty" gorm:"foreignKey:ClearanceID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 	CreatedAt   time.Time         `json:"created_at"`
 	UpdatedAt   time.Time         `json:"updated_at"`
+}
+
+type ClearanceListQuery struct {
+	Page        int    `form:"page"`
+	Limit       int    `form:"limit"`
+	Status      string `form:"status"`
+	UserID      uint   `form:"user_id"`
+	CommodityID uint   `form:"commodity_id"`
+	PortID      uint   `form:"port_id"`
+	RiskLevel   string `form:"risk_level"`
+	Search      string `form:"search"`
+}
+
+type PaginationMeta struct {
+	Page       int   `json:"page"`
+	Limit      int   `json:"limit"`
+	Total      int64 `json:"total"`
+	TotalPages int   `json:"total_pages"`
+}
+
+type ClearanceListResponse struct {
+	Items      []Clearance    `json:"items"`
+	Pagination PaginationMeta `json:"pagination"`
 }
 
 type InspectionRequest struct {

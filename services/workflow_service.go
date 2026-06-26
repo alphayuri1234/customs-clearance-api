@@ -3,6 +3,8 @@ package services
 import (
 	"errors"
 	"fmt"
+	"math"
+	"strings"
 	"time"
 
 	"customs-clearance-api/models"
@@ -16,6 +18,101 @@ type WorkflowService struct {
 
 func NewWorkflowService(db *gorm.DB) *WorkflowService {
 	return &WorkflowService{db: db}
+}
+
+func preloadClearanceRelations(query *gorm.DB) *gorm.DB {
+	return query.
+		Preload("User").
+		Preload("Commodity").
+		Preload("Port").
+		Preload("Port.Country").
+		Preload("RiskProfile").
+		Preload("Inspection").
+		Preload("Release")
+}
+
+func normalizePagination(query models.ClearanceListQuery) models.ClearanceListQuery {
+	if query.Page < 1 {
+		query.Page = 1
+	}
+	if query.Limit < 1 {
+		query.Limit = 10
+	}
+	if query.Limit > 100 {
+		query.Limit = 100
+	}
+
+	query.Status = strings.ToUpper(strings.TrimSpace(query.Status))
+	query.RiskLevel = strings.ToUpper(strings.TrimSpace(query.RiskLevel))
+	query.Search = strings.TrimSpace(query.Search)
+
+	return query
+}
+
+// ListClearances menampilkan daftar clearance dengan pagination dan filter.
+func (service *WorkflowService) ListClearances(query models.ClearanceListQuery) (models.ClearanceListResponse, error) {
+	query = normalizePagination(query)
+	dbQuery := service.db.Model(&models.Clearance{})
+
+	if query.Status != "" {
+		dbQuery = dbQuery.Where("clearances.status = ?", query.Status)
+	}
+	if query.UserID != 0 {
+		dbQuery = dbQuery.Where("clearances.user_id = ?", query.UserID)
+	}
+	if query.CommodityID != 0 {
+		dbQuery = dbQuery.Where("clearances.commodity_id = ?", query.CommodityID)
+	}
+	if query.PortID != 0 {
+		dbQuery = dbQuery.Where("clearances.port_id = ?", query.PortID)
+	}
+	if query.RiskLevel != "" {
+		dbQuery = dbQuery.Joins("JOIN risk_profiles ON risk_profiles.clearance_id = clearances.id").
+			Where("risk_profiles.level = ?", query.RiskLevel)
+	}
+	if query.Search != "" {
+		keyword := "%" + strings.ToLower(query.Search) + "%"
+		dbQuery = dbQuery.
+			Joins("LEFT JOIN commodities ON commodities.id = clearances.commodity_id").
+			Joins("LEFT JOIN ports ON ports.id = clearances.port_id").
+			Where(
+				"LOWER(clearances.description) LIKE ? OR LOWER(commodities.hs_code) LIKE ? OR LOWER(commodities.description) LIKE ? OR LOWER(ports.code) LIKE ? OR LOWER(ports.name) LIKE ?",
+				keyword, keyword, keyword, keyword, keyword,
+			)
+	}
+
+	var total int64
+	if err := dbQuery.Count(&total).Error; err != nil {
+		return models.ClearanceListResponse{}, err
+	}
+
+	var clearances []models.Clearance
+	offset := (query.Page - 1) * query.Limit
+	if err := preloadClearanceRelations(dbQuery).
+		Order("clearances.id DESC").
+		Limit(query.Limit).
+		Offset(offset).
+		Find(&clearances).Error; err != nil {
+		return models.ClearanceListResponse{}, err
+	}
+
+	totalPages := int(math.Ceil(float64(total) / float64(query.Limit)))
+	return models.ClearanceListResponse{
+		Items: clearances,
+		Pagination: models.PaginationMeta{
+			Page:       query.Page,
+			Limit:      query.Limit,
+			Total:      total,
+			TotalPages: totalPages,
+		},
+	}, nil
+}
+
+// GetClearance mengambil detail clearance berdasarkan ID.
+func (service *WorkflowService) GetClearance(clearanceID uint) (models.Clearance, error) {
+	var clearance models.Clearance
+	err := preloadClearanceRelations(service.db).First(&clearance, clearanceID).Error
+	return clearance, err
 }
 
 // EvaluateRiskProfile mengevaluasi tingkat risiko clearance berdasarkan data komoditas dan nilai barang.
