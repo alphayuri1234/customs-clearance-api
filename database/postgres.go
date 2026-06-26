@@ -79,6 +79,8 @@ func InitDB() *gorm.DB {
 		&models.Commodity{},
 		&models.Clearance{},
 		&models.RiskProfile{},
+		&models.InspectionResult{},
+		&models.ReleaseOrder{},
 	)
 	if err != nil {
 		log.Fatalf("Gagal melakukan AutoMigrate: %v", err)

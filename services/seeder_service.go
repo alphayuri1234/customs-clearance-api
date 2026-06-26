@@ -25,7 +25,7 @@ func NewSeederService(db *gorm.DB, workflowService *WorkflowService) *SeederServ
 func (s *SeederService) Seed() error {
 	return s.db.Transaction(func(tx *gorm.DB) error {
 		// 1. Bersihkan seluruh data (Truncate dengan CASCADE agar mereset ID serial)
-		tables := []string{"risk_profiles", "clearances", "commodities", "ports", "countries", "officers", "users"}
+		tables := []string{"inspection_results", "release_orders", "risk_profiles", "clearances", "commodities", "ports", "countries", "officers", "users"}
 		for _, table := range tables {
 			if err := tx.Exec(fmt.Sprintf("TRUNCATE TABLE %s RESTART IDENTITY CASCADE", table)).Error; err != nil {
 				return fmt.Errorf("gagal mereset tabel %s: %w", table, err)
@@ -217,6 +217,62 @@ func (s *SeederService) Seed() error {
 			clearance.UpdatedAt = time.Now()
 			if err := tx.Save(&clearance).Error; err != nil {
 				return fmt.Errorf("gagal mengupdate status akhir clearance ke-%d: %w", i, err)
+			}
+
+			// Tambahkan record InspectionResult dan ReleaseOrder sesuai status akhir
+			officer := officers[r.Intn(len(officers))] // Ambil officer acak (Supardi/Hartono)
+
+			// 1. Catat hasil inspeksi untuk status yang melewatinya
+			if riskProfile.Level == models.RiskLevelHigh {
+				var inspResult string
+				var notes string
+				createInspection := false
+
+				switch clearance.Status {
+				case models.StatusInspectionPassed, models.StatusApproved, models.StatusReleased, models.StatusGateOut:
+					inspResult = "PASS"
+					notes = "Kondisi fisik barang sesuai dokumen pabean."
+					createInspection = true
+				case models.StatusHold:
+					inspResult = "FAIL"
+					notes = "Ditemukan ketidaksesuaian jumlah fisik barang."
+					createInspection = true
+				}
+
+				if createInspection {
+					inspectionResult := models.InspectionResult{
+						ClearanceID: clearance.ID,
+						OfficerID:   officer.ID,
+						Result:      inspResult,
+						Notes:       notes,
+					}
+					if err := tx.Create(&inspectionResult).Error; err != nil {
+						return fmt.Errorf("seeder gagal mencatat hasil inspeksi untuk clearance ke-%d: %w", i, err)
+					}
+				}
+			}
+
+			// 2. Catat dokumen ReleaseOrder (SPPB) untuk status RELEASED dan GATE_OUT
+			if clearance.Status == models.StatusReleased || clearance.Status == models.StatusGateOut {
+				todayStr := time.Now().Format("20060102")
+				var todayCount int64
+				if err := tx.Model(&models.ReleaseOrder{}).
+					Where("release_no LIKE ?", "SPPB/"+todayStr+"/%").
+					Count(&todayCount).Error; err != nil {
+					return err
+				}
+				seqNo := todayCount + 1
+				releaseNo := fmt.Sprintf("SPPB/%s/%04d", todayStr, seqNo)
+
+				releaseOrder := models.ReleaseOrder{
+					ClearanceID: clearance.ID,
+					ReleaseNo:   releaseNo,
+					OfficerID:   officer.ID,
+					IssuedAt:    time.Now().Add(-time.Duration(r.Intn(12)) * time.Hour),
+				}
+				if err := tx.Create(&releaseOrder).Error; err != nil {
+					return fmt.Errorf("seeder gagal membuat release order untuk clearance ke-%d: %w", i, err)
+				}
 			}
 		}
 
