@@ -1,12 +1,14 @@
 package controllers
 
 import (
+	"errors"
 	"net/http"
 
 	"customs-clearance-api/middleware"
 	"customs-clearance-api/models"
 	"customs-clearance-api/services"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type WorkflowController struct {
@@ -15,6 +17,72 @@ type WorkflowController struct {
 
 func NewWorkflowController(workflowService *services.WorkflowService) *WorkflowController {
 	return &WorkflowController{workflowService: workflowService}
+}
+
+// ListClearances godoc
+// @Summary Daftar Customs Clearance
+// @Description Menampilkan daftar clearance dengan pagination dan filter (Khusus Officer)
+// @Tags Workflow Customs Clearance
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param page query int false "Nomor halaman"
+// @Param limit query int false "Jumlah data per halaman, maksimal 100"
+// @Param status query string false "Filter status clearance"
+// @Param user_id query int false "Filter user importir"
+// @Param commodity_id query int false "Filter komoditas"
+// @Param port_id query int false "Filter pelabuhan"
+// @Param risk_level query string false "Filter risk level LOW/HIGH"
+// @Param search query string false "Cari deskripsi, HS code, komoditas, atau pelabuhan"
+// @Success 200 {object} models.APIResponse{data=models.ClearanceListResponse} "Data Clearance Berhasil Diambil"
+// @Failure 400 {object} models.APIResponse "Query Tidak Valid"
+// @Failure 500 {object} models.APIResponse "Gagal Mengambil Data"
+// @Router /clearances [get]
+func (controller *WorkflowController) ListClearances(ctx *gin.Context) {
+	var query models.ClearanceListQuery
+	if err := ctx.ShouldBindQuery(&query); err != nil {
+		ctx.JSON(http.StatusBadRequest, models.ErrorResponse("query clearance tidak valid", err.Error()))
+		return
+	}
+
+	response, err := controller.workflowService.ListClearances(query)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, models.ErrorResponse("data clearance gagal diambil", err.Error()))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, models.SuccessResponse("data clearance berhasil diambil", response))
+}
+
+// GetClearance godoc
+// @Summary Detail Customs Clearance
+// @Description Menampilkan detail clearance berdasarkan ID (Khusus Officer)
+// @Tags Workflow Customs Clearance
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "ID Clearance"
+// @Success 200 {object} models.APIResponse{data=models.Clearance} "Detail Clearance Berhasil Diambil"
+// @Failure 400 {object} models.APIResponse "ID Tidak Valid"
+// @Failure 404 {object} models.APIResponse "Clearance Tidak Ditemukan"
+// @Router /clearances/{id} [get]
+func (controller *WorkflowController) GetClearance(ctx *gin.Context) {
+	id, ok := parseID(ctx)
+	if !ok {
+		return
+	}
+
+	clearance, err := controller.workflowService.GetClearance(id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			ctx.JSON(http.StatusNotFound, models.ErrorResponse("clearance tidak ditemukan", nil))
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, models.ErrorResponse("detail clearance gagal diambil", err.Error()))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, models.SuccessResponse("detail clearance berhasil diambil", clearance))
 }
 
 // InitWorkflow godoc
