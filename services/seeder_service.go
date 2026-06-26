@@ -163,6 +163,11 @@ func (s *SeederService) Seed() error {
 				return fmt.Errorf("gagal membuat mock clearance ke-%d: %w", i, err)
 			}
 
+			// Untuk ID 34 dan 35, biarkan tetap SUBMITTED tanpa Risk Profile untuk simulasi pengujian E2E dari /workflow/init
+			if i >= 34 {
+				continue
+			}
+
 			// Evaluasi Risk Profile & Update Status Awal
 			riskProfile, err := s.workflowService.EvaluateRiskProfile(tx, &clearance)
 			if err != nil {

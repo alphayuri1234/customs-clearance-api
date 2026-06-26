@@ -95,14 +95,14 @@ func TestDashboardAndSeeder_Integration(t *testing.T) {
 		t.Errorf("Jumlah data di status counts harus 35, got: %d", totalStatusSum)
 	}
 
-	// 5. Verifikasi kategori risiko
+	// 5. Verifikasi kategori risiko (33 karena 2 data terakhir sengaja dibiarkan berstatus SUBMITTED tanpa Risk Profile untuk simulasi /workflow/init)
 	var totalRiskSum int64
 	for risk, count := range summary.RiskCounts {
 		totalRiskSum += count
 		log.Printf("Risk %s: %d", risk, count)
 	}
-	if totalRiskSum != 35 {
-		t.Errorf("Jumlah data di risk counts harus 35, got: %d", totalRiskSum)
+	if totalRiskSum != 33 {
+		t.Errorf("Jumlah data di risk counts harus 33, got: %d", totalRiskSum)
 	}
 
 	// 6. Verifikasi Top Commodities & Ports
@@ -118,9 +118,9 @@ func TestDashboardAndSeeder_Integration(t *testing.T) {
 		t.Errorf("Recent clearances harus berisi tepat 5 data, got: %d", len(summary.RecentClearances))
 	}
 
-	// Cek apakah data recent clearance ter-preload dengan benar
-	firstClearance := summary.RecentClearances[0]
-	if firstClearance.User.ID == 0 || firstClearance.Commodity.ID == 0 || firstClearance.Port.ID == 0 || firstClearance.RiskProfile == nil {
+	// Cek apakah data recent clearance ter-preload dengan benar (menggunakan indeks 2 karena indeks 0 & 1/ID 35 & 34 adalah raw SUBMITTED tanpa RiskProfile)
+	testClearance := summary.RecentClearances[2]
+	if testClearance.User.ID == 0 || testClearance.Commodity.ID == 0 || testClearance.Port.ID == 0 || testClearance.RiskProfile == nil {
 		t.Error("Relasi (User, Commodity, Port, RiskProfile) pada recent clearance harus di-preload")
 	}
 }
