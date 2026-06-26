@@ -12,6 +12,7 @@ import (
 func SetupRouter(db *gorm.DB) *gin.Engine {
 	router := gin.Default()
 	authService := services.NewAuthService(db)
+	masterService := services.NewMasterService(db)
 
 	router.GET("/health", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, models.SuccessResponse("service aktif", gin.H{
@@ -21,6 +22,7 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 
 	api := router.Group("/api/v1")
 	RegisterAuthRoutes(api, authService)
+	RegisterMasterRoutes(api, masterService)
 
 	return router
 }

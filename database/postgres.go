@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"customs-clearance-api/models"
+
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -21,7 +22,7 @@ func InitDB() *gorm.DB {
 	}
 	port := os.Getenv("DB_PORT")
 	if port == "" {
-		port = "5435"
+		port = "5432"
 	}
 	user := os.Getenv("DB_USER")
 	if user == "" {
@@ -63,7 +64,12 @@ func InitDB() *gorm.DB {
 	log.Println("Koneksi database PostgreSQL berhasil diinisialisasi")
 
 	log.Println("Menjalankan AutoMigrate...")
-	err = db.AutoMigrate(&models.User{})
+	err = db.AutoMigrate(
+		&models.User{},
+		&models.Country{},
+		&models.Port{},
+		&models.Commodity{},
+	)
 	if err != nil {
 		log.Fatalf("Gagal melakukan AutoMigrate: %v", err)
 	}
