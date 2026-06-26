@@ -13,6 +13,9 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 	router := gin.Default()
 	authService := services.NewAuthService(db)
 	masterService := services.NewMasterService(db)
+	workflowService := services.NewWorkflowService(db)
+	seederService := services.NewSeederService(db, workflowService)
+	dashboardService := services.NewDashboardService(db)
 
 	router.GET("/health", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, models.SuccessResponse("service aktif", gin.H{
@@ -23,6 +26,8 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 	api := router.Group("/api/v1")
 	RegisterAuthRoutes(api, authService)
 	RegisterMasterRoutes(api, masterService)
+	RegisterWorkflowRoutes(api, workflowService)
+	RegisterDashboardRoutes(api, seederService, dashboardService)
 
 	return router
 }
