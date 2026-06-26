@@ -6,6 +6,8 @@ import (
 	"customs-clearance-api/models"
 	"customs-clearance-api/services"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"gorm.io/gorm"
 )
 
@@ -22,6 +24,12 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 			"service": "customs-clearance-api",
 		}))
 	})
+
+	router.GET("/swagger-docs/doc.json", func(ctx *gin.Context) {
+		ctx.File("./docs/swagger.json")
+	})
+
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL("/swagger-docs/doc.json")))
 
 	api := router.Group("/api/v1")
 	RegisterAuthRoutes(api, authService)
