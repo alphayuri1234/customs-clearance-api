@@ -3,6 +3,7 @@ package controllers
 import (
 	"net/http"
 
+	"customs-clearance-api/middleware"
 	"customs-clearance-api/models"
 	"customs-clearance-api/services"
 	"github.com/gin-gonic/gin"
