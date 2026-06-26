@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"customs-clearance-api/models"
 	"gorm.io/gorm"
@@ -126,7 +127,7 @@ func (service *WorkflowService) InitWorkflow(clearanceID uint) (*models.Clearanc
 }
 
 // ProcessInspection memproses pemeriksaan fisik. Hanya valid jika status saat ini adalah INSPECTION.
-func (service *WorkflowService) ProcessInspection(clearanceID uint, resultInspection string) (*models.Clearance, error) {
+func (service *WorkflowService) ProcessInspection(clearanceID uint, resultInspection string, userID uint) (*models.Clearance, error) {
 	var result *models.Clearance
 
 	err := service.db.Transaction(func(tx *gorm.DB) error {
@@ -141,6 +142,13 @@ func (service *WorkflowService) ProcessInspection(clearanceID uint, resultInspec
 			return fmt.Errorf("status saat ini '%s'. Transisi ke hasil pemeriksaan hanya valid untuk status 'INSPECTION'", clearance.Status)
 		}
 
+		// Cari data Officer berdasarkan userID yang terautentikasi
+		var officer models.Officer
+		if err := tx.Where("user_id = ?", userID).First(&officer).Error; err != nil {
+			return errors.New("petugas pemeriksa tidak terdaftar di sistem")
+		}
+
+		// Tentukan status akhir
 		switch resultInspection {
 		case "PASS":
 			clearance.Status = models.StatusInspectionPassed
@@ -152,6 +160,17 @@ func (service *WorkflowService) ProcessInspection(clearanceID uint, resultInspec
 
 		if err := tx.Save(&clearance).Error; err != nil {
 			return err
+		}
+
+		// Catat riwayat hasil pemeriksaan fisik kontainer/barang
+		inspectionResult := models.InspectionResult{
+			ClearanceID: clearance.ID,
+			OfficerID:   officer.ID,
+			Result:      resultInspection,
+			Notes:       fmt.Sprintf("Pemeriksaan fisik dilakukan oleh %s (NIP: %s)", officer.Position, officer.NIP),
+		}
+		if err := tx.Create(&inspectionResult).Error; err != nil {
+			return fmt.Errorf("gagal membuat catatan hasil pemeriksaan fisik: %w", err)
 		}
 
 		result = &clearance
@@ -206,7 +225,7 @@ func (service *WorkflowService) ProcessApprove(clearanceID uint) (*models.Cleara
 }
 
 // ProcessRelease menerbitkan SPPB (Surat Persetujuan Pengeluaran Barang).
-func (service *WorkflowService) ProcessRelease(clearanceID uint) (*models.Clearance, error) {
+func (service *WorkflowService) ProcessRelease(clearanceID uint, userID uint) (*models.Clearance, error) {
 	var result *models.Clearance
 
 	err := service.db.Transaction(func(tx *gorm.DB) error {
@@ -233,9 +252,37 @@ func (service *WorkflowService) ProcessRelease(clearanceID uint) (*models.Cleara
 			return fmt.Errorf("transisi ke RELEASED tidak valid dari status '%s'", clearance.Status)
 		}
 
+		// Cari data Officer berdasarkan userID yang terautentikasi
+		var officer models.Officer
+		if err := tx.Where("user_id = ?", userID).First(&officer).Error; err != nil {
+			return errors.New("petugas penerbit SPPB tidak terdaftar di sistem")
+		}
+
+		// Format Nomor SPPB: SPPB/YYYYMMDD/XXXX (Sequence bertambah tiap hari)
+		todayStr := time.Now().Format("20060102")
+		var todayCount int64
+		if err := tx.Model(&models.ReleaseOrder{}).
+			Where("release_no LIKE ?", "SPPB/"+todayStr+"/%").
+			Count(&todayCount).Error; err != nil {
+			return err
+		}
+		seqNo := todayCount + 1
+		releaseNo := fmt.Sprintf("SPPB/%s/%04d", todayStr, seqNo)
+
 		clearance.Status = models.StatusReleased
 		if err := tx.Save(&clearance).Error; err != nil {
 			return err
+		}
+
+		// Simpan berkas Release Order (SPPB) resmi ke database
+		releaseOrder := models.ReleaseOrder{
+			ClearanceID: clearance.ID,
+			ReleaseNo:   releaseNo,
+			OfficerID:   officer.ID,
+			IssuedAt:    time.Now(),
+		}
+		if err := tx.Create(&releaseOrder).Error; err != nil {
+			return fmt.Errorf("gagal menerbitkan dokumen SPPB resmi: %w", err)
 		}
 
 		result = &clearance
