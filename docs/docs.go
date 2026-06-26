@@ -1386,11 +1386,17 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
+                "inspection": {
+                    "$ref": "#/definitions/models.InspectionResult"
+                },
                 "port": {
                     "$ref": "#/definitions/models.Port"
                 },
                 "port_id": {
                     "type": "integer"
+                },
+                "release": {
+                    "$ref": "#/definitions/models.ReleaseOrder"
                 },
                 "risk_profile": {
                     "$ref": "#/definitions/models.RiskProfile"
@@ -1571,6 +1577,36 @@ const docTemplate = `{
                 }
             }
         },
+        "models.InspectionResult": {
+            "type": "object",
+            "properties": {
+                "clearance_id": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "notes": {
+                    "type": "string"
+                },
+                "officer": {
+                    "$ref": "#/definitions/models.Officer"
+                },
+                "officer_id": {
+                    "type": "integer"
+                },
+                "result": {
+                    "description": "PASS / FAIL",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
         "models.LoginRequest": {
             "type": "object",
             "required": [
@@ -1583,6 +1619,26 @@ const docTemplate = `{
                 },
                 "password": {
                     "type": "string"
+                }
+            }
+        },
+        "models.Officer": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "nip": {
+                    "type": "string"
+                },
+                "position": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/models.User"
+                },
+                "user_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -1656,6 +1712,35 @@ const docTemplate = `{
                         "User",
                         "Officer"
                     ]
+                }
+            }
+        },
+        "models.ReleaseOrder": {
+            "type": "object",
+            "properties": {
+                "clearance_id": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "issued_at": {
+                    "type": "string"
+                },
+                "officer": {
+                    "$ref": "#/definitions/models.Officer"
+                },
+                "officer_id": {
+                    "type": "integer"
+                },
+                "release_no": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },

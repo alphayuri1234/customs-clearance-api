@@ -35,10 +35,14 @@ definitions:
         type: string
       id:
         type: integer
+      inspection:
+        $ref: '#/definitions/models.InspectionResult'
       port:
         $ref: '#/definitions/models.Port'
       port_id:
         type: integer
+      release:
+        $ref: '#/definitions/models.ReleaseOrder'
       risk_profile:
         $ref: '#/definitions/models.RiskProfile'
       status:
@@ -159,6 +163,26 @@ definitions:
     - clearance_id
     - result
     type: object
+  models.InspectionResult:
+    properties:
+      clearance_id:
+        type: integer
+      created_at:
+        type: string
+      id:
+        type: integer
+      notes:
+        type: string
+      officer:
+        $ref: '#/definitions/models.Officer'
+      officer_id:
+        type: integer
+      result:
+        description: PASS / FAIL
+        type: string
+      updated_at:
+        type: string
+    type: object
   models.LoginRequest:
     properties:
       email:
@@ -168,6 +192,19 @@ definitions:
     required:
     - email
     - password
+    type: object
+  models.Officer:
+    properties:
+      id:
+        type: integer
+      nip:
+        type: string
+      position:
+        type: string
+      user:
+        $ref: '#/definitions/models.User'
+      user_id:
+        type: integer
     type: object
   models.Port:
     properties:
@@ -218,6 +255,25 @@ definitions:
     - email
     - name
     - password
+    type: object
+  models.ReleaseOrder:
+    properties:
+      clearance_id:
+        type: integer
+      created_at:
+        type: string
+      id:
+        type: integer
+      issued_at:
+        type: string
+      officer:
+        $ref: '#/definitions/models.Officer'
+      officer_id:
+        type: integer
+      release_no:
+        type: string
+      updated_at:
+        type: string
     type: object
   models.ReleaseRequest:
     properties:
