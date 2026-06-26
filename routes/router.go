@@ -6,11 +6,12 @@ import (
 	"customs-clearance-api/models"
 	"customs-clearance-api/services"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
-func SetupRouter() *gin.Engine {
+func SetupRouter(db *gorm.DB) *gin.Engine {
 	router := gin.Default()
-	authService := services.NewAuthService()
+	authService := services.NewAuthService(db)
 
 	router.GET("/health", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, models.SuccessResponse("service aktif", gin.H{

@@ -3,32 +3,32 @@ package services
 import (
 	"errors"
 	"strings"
-	"sync"
 	"time"
 
 	"customs-clearance-api/models"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 type AuthService struct {
-	mu     sync.RWMutex
-	users  map[string]models.User
-	nextID uint
+	db *gorm.DB
 }
 
-func NewAuthService() *AuthService {
+func NewAuthService(db *gorm.DB) *AuthService {
 	return &AuthService{
-		users:  make(map[string]models.User),
-		nextID: 1,
+		db: db,
 	}
 }
 
 func (service *AuthService) Register(request models.RegisterRequest) (models.AuthResponse, error) {
-	service.mu.Lock()
-	defer service.mu.Unlock()
-
 	email := strings.ToLower(strings.TrimSpace(request.Email))
-	if _, exists := service.users[email]; exists {
+
+	var count int64
+	err := service.db.Model(&models.User{}).Where("email = ?", email).Count(&count).Error
+	if err != nil {
+		return models.AuthResponse{}, err
+	}
+	if count > 0 {
 		return models.AuthResponse{}, errors.New("email sudah terdaftar")
 	}
 
@@ -44,7 +44,6 @@ func (service *AuthService) Register(request models.RegisterRequest) (models.Aut
 
 	now := time.Now()
 	user := models.User{
-		ID:        service.nextID,
 		Name:      strings.TrimSpace(request.Name),
 		Email:     email,
 		Password:  string(hashedPassword),
@@ -53,8 +52,12 @@ func (service *AuthService) Register(request models.RegisterRequest) (models.Aut
 		UpdatedAt: now,
 	}
 
-	service.users[email] = user
-	service.nextID++
+	if err := service.db.Create(&user).Error; err != nil {
+		if strings.Contains(strings.ToLower(err.Error()), "unique") {
+			return models.AuthResponse{}, errors.New("email sudah terdaftar")
+		}
+		return models.AuthResponse{}, err
+	}
 
 	token, err := GenerateToken(user.ID, user.Email, user.Role)
 	if err != nil {
@@ -65,12 +68,15 @@ func (service *AuthService) Register(request models.RegisterRequest) (models.Aut
 }
 
 func (service *AuthService) Login(request models.LoginRequest) (models.AuthResponse, error) {
-	service.mu.RLock()
-	user, exists := service.users[strings.ToLower(strings.TrimSpace(request.Email))]
-	service.mu.RUnlock()
+	var user models.User
+	email := strings.ToLower(strings.TrimSpace(request.Email))
 
-	if !exists {
-		return models.AuthResponse{}, errors.New("email atau password salah")
+	err := service.db.Where("email = ?", email).First(&user).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return models.AuthResponse{}, errors.New("email atau password salah")
+		}
+		return models.AuthResponse{}, err
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(request.Password)); err != nil {
@@ -86,14 +92,10 @@ func (service *AuthService) Login(request models.LoginRequest) (models.AuthRespo
 }
 
 func (service *AuthService) FindByID(userID uint) (models.User, bool) {
-	service.mu.RLock()
-	defer service.mu.RUnlock()
-
-	for _, user := range service.users {
-		if user.ID == userID {
-			return user, true
-		}
+	var user models.User
+	err := service.db.First(&user, userID).Error
+	if err != nil {
+		return models.User{}, false
 	}
-
-	return models.User{}, false
+	return user, true
 }
