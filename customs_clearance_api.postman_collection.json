@@ -1,0 +1,715 @@
+{
+	"info": {
+		"_postman_id": "49ac842c-ccbf-45a2-915c-f79c98380371",
+		"name": "Customs Clearance API",
+		"description": "Postman Collection untuk menguji seluruh REST API pada proyek Customs Clearance (Developer 1, 2, 3, 4). Menggunakan autentikasi Bearer Token otomatis pada level koleksi.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Register Officer (Petugas)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.success && jsonData.data && jsonData.data.token) {",
+									"    pm.environment.set(\"token\", jsonData.data.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Supardi Officer\",\n    \"email\": \"supardi@customs.go.id\",\n    \"password\": \"password123\",\n    \"role\": \"Officer\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/register",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Register Importer (User Biasa)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.success && jsonData.data && jsonData.data.token) {",
+									"    pm.environment.set(\"token\", jsonData.data.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"PT. Maju Mundur\",\n    \"email\": \"importer1@email.com\",\n    \"password\": \"password123\",\n    \"role\": \"User\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/register",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.success && jsonData.data && jsonData.data.token) {",
+									"    pm.environment.set(\"token\", jsonData.data.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"supardi@customs.go.id\",\n    \"password\": \"password123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Me (Profile)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/me",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"me"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Seeder & Dashboard",
+			"item": [
+				{
+					"name": "Seed Data",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/seed",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"seed"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Dashboard Summary",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/dashboard",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"dashboard"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Master Data",
+			"item": [
+				{
+					"name": "Countries",
+					"item": [
+						{
+							"name": "Get Countries",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/master/countries",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"master",
+										"countries"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Country",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"code\": \"SGP\",\n    \"name\": \"Singapore\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/master/countries",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"master",
+										"countries"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Country Detail",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/master/countries/1",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"master",
+										"countries",
+										"1"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Update Country",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"code\": \"SGP\",\n    \"name\": \"Singapore Premium\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/master/countries/1",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"master",
+										"countries",
+										"1"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Country",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/master/countries/1",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"master",
+										"countries",
+										"1"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Ports",
+					"item": [
+						{
+							"name": "Get Ports",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/master/ports",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"master",
+										"ports"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Port",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"code\": \"SGPIN\",\n    \"name\": \"Jurong Port\",\n    \"country_id\": 1\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/master/ports",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"master",
+										"ports"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Update Port",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"code\": \"SGPIN\",\n    \"name\": \"Jurong Port Premium\",\n    \"country_id\": 1\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/master/ports/1",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"master",
+										"ports",
+										"1"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Port",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/master/ports/1",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"master",
+										"ports",
+										"1"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Commodities",
+					"item": [
+						{
+							"name": "Get Commodities",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/master/commodities",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"master",
+										"commodities"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Commodity",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"hs_code\": \"85171200\",\n    \"description\": \"Smartphones / Telepon Seluler\",\n    \"import_duty_rate\": 10.0,\n    \"vat_rate\": 11.0\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/master/commodities",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"master",
+										"commodities"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Update Commodity",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"hs_code\": \"85171200\",\n    \"description\": \"Smartphones Premium Edition\",\n    \"import_duty_rate\": 10.0,\n    \"vat_rate\": 11.0\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/master/commodities/1",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"master",
+										"commodities",
+										"1"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Commodity",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/master/commodities/1",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"master",
+										"commodities",
+										"1"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Workflow",
+			"item": [
+				{
+					"name": "Init Workflow (Cek Risk)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"clearance_id\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/workflow/init",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"workflow",
+								"init"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Submit Physical Inspection (PASS)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"clearance_id\": 1,\n    \"result\": \"PASS\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/workflow/inspection",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"workflow",
+								"inspection"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Submit Physical Inspection (FAIL - HOLD)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"clearance_id\": 1,\n    \"result\": \"FAIL\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/workflow/inspection",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"workflow",
+								"inspection"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Approve Document",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"clearance_id\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/workflow/approve",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"workflow",
+								"approve"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Release Document (SPPB)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"clearance_id\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/workflow/release",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"workflow",
+								"release"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Gate Out",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"clearance_id\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/workflow/gate-out",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"workflow",
+								"gate-out"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{token}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}
