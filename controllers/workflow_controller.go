@@ -16,7 +16,17 @@ func NewWorkflowController(workflowService *services.WorkflowService) *WorkflowC
 	return &WorkflowController{workflowService: workflowService}
 }
 
-// InitWorkflow inisialisasi workflow awal (cek risk profile)
+// InitWorkflow godoc
+// @Summary Inisialisasi Workflow
+// @Description Memulai proses evaluasi Risk Engine pada clearance yang baru masuk (SUBMITTED) (Khusus Officer)
+// @Tags Workflow Customs Clearance
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body object{clearance_id=int} true "Payload Inisialisasi Workflow"
+// @Success 200 {object} models.APIResponse "Workflow Berhasil Diinisialisasi"
+// @Failure 400 {object} models.APIResponse "Request Tidak Valid atau Inisialisasi Gagal"
+// @Router /workflow/init [post]
 func (controller *WorkflowController) InitWorkflow(ctx *gin.Context) {
 	var request struct {
 		ClearanceID uint `json:"clearance_id" binding:"required"`
@@ -40,7 +50,17 @@ func (controller *WorkflowController) InitWorkflow(ctx *gin.Context) {
 	}))
 }
 
-// ProcessInspection memproses hasil periksa fisik
+// ProcessInspection godoc
+// @Summary Proses Hasil Pemeriksaan Fisik
+// @Description Menginputkan hasil periksa fisik (PASS/FAIL) untuk clearance berisiko tinggi (INSPECTION) (Khusus Officer)
+// @Tags Workflow Customs Clearance
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body models.InspectionRequest true "Payload Hasil Pemeriksaan"
+// @Success 200 {object} models.APIResponse "Hasil Pemeriksaan Berhasil Diproses"
+// @Failure 400 {object} models.APIResponse "Request Tidak Valid atau Gagal Diproses"
+// @Router /workflow/inspection [post]
 func (controller *WorkflowController) ProcessInspection(ctx *gin.Context) {
 	var request models.InspectionRequest
 	if err := ctx.ShouldBindJSON(&request); err != nil {
@@ -60,7 +80,17 @@ func (controller *WorkflowController) ProcessInspection(ctx *gin.Context) {
 	}))
 }
 
-// ProcessApprove menyetujui dokumen clearance
+// ProcessApprove godoc
+// @Summary Persetujuan Customs Clearance
+// @Description Memberikan persetujuan Bea Cukai pada dokumen clearance (Khusus Officer)
+// @Tags Workflow Customs Clearance
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body models.ApproveRequest true "Payload Persetujuan"
+// @Success 200 {object} models.APIResponse "Clearance Berhasil Disetujui"
+// @Failure 400 {object} models.APIResponse "Request Tidak Valid atau Gagal Diproses"
+// @Router /workflow/approve [post]
 func (controller *WorkflowController) ProcessApprove(ctx *gin.Context) {
 	var request models.ApproveRequest
 	if err := ctx.ShouldBindJSON(&request); err != nil {
@@ -80,7 +110,17 @@ func (controller *WorkflowController) ProcessApprove(ctx *gin.Context) {
 	}))
 }
 
-// ProcessRelease menerbitkan SPPB
+// ProcessRelease godoc
+// @Summary Menerbitkan SPPB (Surat Persetujuan Pengeluaran Barang)
+// @Description Mengeluarkan SPPB untuk kontainer agar bisa keluar dari pelabuhan (Khusus Officer)
+// @Tags Workflow Customs Clearance
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body models.ReleaseRequest true "Payload Rilis SPPB"
+// @Success 200 {object} models.APIResponse "SPPB Berhasil Diterbitkan"
+// @Failure 400 {object} models.APIResponse "Request Tidak Valid atau Gagal Diproses"
+// @Router /workflow/release [post]
 func (controller *WorkflowController) ProcessRelease(ctx *gin.Context) {
 	var request models.ReleaseRequest
 	if err := ctx.ShouldBindJSON(&request); err != nil {
@@ -100,7 +140,17 @@ func (controller *WorkflowController) ProcessRelease(ctx *gin.Context) {
 	}))
 }
 
-// ProcessGateOut memproses pengeluaran barang
+// ProcessGateOut godoc
+// @Summary Keluar Gerbang (Gate Out)
+// @Description Memproses pengeluaran fisik barang/kontainer dari kawasan pabean pelabuhan (Khusus Officer)
+// @Tags Workflow Customs Clearance
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body models.GateOutRequest true "Payload Gate Out"
+// @Success 200 {object} models.APIResponse "Barang Berhasil Keluar"
+// @Failure 400 {object} models.APIResponse "Request Tidak Valid atau Gagal Diproses"
+// @Router /workflow/gate-out [post]
 func (controller *WorkflowController) ProcessGateOut(ctx *gin.Context) {
 	var request models.GateOutRequest
 	if err := ctx.ShouldBindJSON(&request); err != nil {
